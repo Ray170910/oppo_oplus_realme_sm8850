@@ -276,7 +276,7 @@ jobs:
           elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
             echo "正在配置ReSukiSU..."
             curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/refs/heads/main/kernel/setup.sh" | bash -s main
-            echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%@cctv18"' >> ./common/arch/arm64/configs/gki_defconfig
+            echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%-Email:admin@kernelsu.cc"' >> ./common/arch/arm64/configs/gki_defconfig
             cd ./KernelSU
             # 生成自定义版本号（基于提交计数）, 失败时使用 114514
             KSU_VERSION=$(expr $(git rev-list --count main) + 30700 2>/dev/null || echo 114514)
@@ -527,7 +527,28 @@ jobs:
           fi
           sed -i 's/${scm_version}//' ./common/scripts/setlocalversion
           echo "CONFIG_LOCALVERSION_AUTO=n" >> ./common/arch/arm64/configs/gki_defconfig
-           
+
+      - name: 🎮 Apply GameSense patches
+        run: |
+          echo "正在下载并应用 GameSense 补丁..."
+          cd kernel_workspace/common
+          mkdir -p /tmp/gamesense
+          PATCH_FILES=$(curl -LSs -H "Authorization: token ${{ secrets.Patch_TOKEN }}" \
+            "https://api.github.com/repos/Ray170910/gamesense-ksu-module/contents/V6" \
+            | jq -r '.[] | select(.name | endswith(".patch")) | .name')
+          for patch_name in $PATCH_FILES; do
+            echo "[GameSense] 下载 $patch_name ..."
+            curl -LSs -H "Authorization: token ${{ secrets.Patch_TOKEN }}" \
+              "https://raw.githubusercontent.com/Ray170910/gamesense-ksu-module/main/V6/$patch_name" \
+              -o "/tmp/gamesense/$patch_name"
+            if [ -f "/tmp/gamesense/$patch_name" ]; then
+              echo "[GameSense] 应用 $patch_name ..."
+              patch -p1 < "/tmp/gamesense/$patch_name" || \
+              patch -p1 --fuzz=3 < "/tmp/gamesense/$patch_name" || true
+            fi
+          done
+          echo "✅ GameSense 补丁应用完成"
+          
       - name: 构建内核
         run: |
           WORKDIR="$(pwd)"
