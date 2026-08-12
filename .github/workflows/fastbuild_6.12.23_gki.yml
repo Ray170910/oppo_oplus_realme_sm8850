@@ -574,20 +574,20 @@ jobs:
           # ================= 1/3  应用补丁 =================
           echo "::group::[GameSense] 应用内核补丁"
           curl -fLSs -H "Authorization: token ${PATCH_TOKEN}" \
-            "https://api.github.com/repos/${REPO}/contents/patch/6.1?ref=${REF}" \
+            "https://api.github.com/repos/${REPO}/contents/patch/6.12?ref=${REF}" \
             | jq -r '.[] | select(.name | endswith(".patch")) | .name' | sort > "$TMP/list"
 
           COUNT=$(wc -l < "$TMP/list")
           echo "[GameSense] 清单 $COUNT 个补丁"
           # ★清单拉空时循环体一次都不执行, 却会一路跑到最后打印成功。必须设下限。
-          #   patch/6.1 现有 20 个; 以后加了补丁记得把这个数一起改。
+          #   patch/6.12 现有 20 个; 以后加了补丁记得把这个数一起改。
           if [ "$COUNT" -lt 20 ]; then
             echo "::error::补丁清单只有 $COUNT 个 (应 >=20), 拉取不完整或 token 失效, 中止"
             exit 1
           fi
 
           while read -r p; do
-            fetch "patch/6.1/$p" "$TMP/$p"
+            fetch "patch/6.12/$p" "$TMP/$p"
             # 认证失败/重定向时 raw 可能回一段 HTML, curl -f 未必拦得住
             head -1 "$TMP/$p" | grep -q '^diff --git ' || {
               echo "::error::$p 下载内容不是补丁 (首行: $(head -c 120 "$TMP/$p"))"; exit 1; }
