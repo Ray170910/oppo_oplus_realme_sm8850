@@ -113,8 +113,8 @@ jobs:
     steps:
       - name: ⏰ 解析内核构建时间 (官核 banner 时间 / 自定义 / 回退)
         run: |
-          # ★官核时间: 设备上 adb shell cat /proc/version, 取 "#1 SMP PREEMPT " 之后的整段时间串填入
-          STOCK_KERNEL_TIME=''
+          # ★官核时间 (Redmi K Pad 2 实机 banner 2026-10-17 采: adb shell cat /proc/version)
+          STOCK_KERNEL_TIME='Wed Apr 22 11:17:07 UTC 2026'
           if [ -n "${{ github.event.inputs.custom_kernel_time }}" ]; then
             KERNEL_TIME="${{ github.event.inputs.custom_kernel_time }}"
           elif [ -n "$STOCK_KERNEL_TIME" ]; then
@@ -675,6 +675,8 @@ jobs:
           wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/libfaketimeMT.so
           chmod 777 ./*.so
           export TZ=UTC
+          export KBUILD_BUILD_USER="kleaf"
+          export KBUILD_BUILD_HOST="build-host"  # banner 与官核一致 (kleaf@build-host, 见 /proc/version)
           export FAKESTAT="${FAKESTAT_ABS}"
           export FAKETIME="@${FAKETIME_ABS}"
           echo "FAKESTAT=$FAKESTAT" >> $GITHUB_ENV
